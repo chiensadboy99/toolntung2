@@ -1,307 +1,136 @@
 <?php
+// login.php - Đăng nhập admin với giao diện hiện đại công nghệ
 session_start();
-$message = $_SESSION['message'] ?? '';
-unset($_SESSION['message']);
-?>
+include 'db.php';
 
+$message = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username'] ?? '');
+    $password = $_POST['password'] ?? '';
+
+    if ($username === '' || $password === '') {
+        $message = 'error|Vui lòng nhập đầy đủ thông tin.';
+    } else {
+        $stmt = $conn->prepare("SELECT * FROM admin_account WHERE username = ? LIMIT 1");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($user = $result->fetch_assoc()) {
+            if (password_verify($password, $user['password'])) {
+                $_SESSION['admin'] = $username;
+                header("Location: admin.php");
+                exit;
+            } else {
+                $message = 'error|Sai mật khẩu.';
+            }
+        } else {
+            $message = 'error|Tài khoản không tồn tại.';
+        }
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>MrTínhiOS - Nhập Key</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;600&display=swap" rel="stylesheet">
+  <title>Đăng nhập Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <style>
     * {
-      margin: 0;
-      padding: 0;
       box-sizing: border-box;
     }
-
-    body {
-      font-family: 'Roboto', sans-serif;
-      background: url('https://tooltxthanhtung.site/IMAGE/anh-nen-may-tinh-4k-chill_48991223469.jpg') no-repeat center center fixed;
-      background-size: cover;
-      min-height: 100vh;
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #0f0f0f, #1c1c1c);
       display: flex;
+      align-items: center;
       justify-content: center;
-      align-items: center;
-      overflow-x: hidden;
-      position: relative;
-    }
-
-    .login-container {
-      background: rgba(255, 255, 255, 0.08);
-      border: 2px solid rgba(125, 88, 255, 0.3);
-      box-shadow: 0 0 25px rgba(125, 88, 255, 0.4);
-      backdrop-filter: blur(18px);
-      border-radius: 20px;
-      width: 100%;
-      max-width: 400px;
-      color: #fff;
       overflow: hidden;
-      position: relative;
-      z-index: 10;
-      transition: transform 0.5s ease;
     }
-
-    .header-box {
-      background: linear-gradient(135deg, #7f5eff, #e04fff);
-      padding: 25px 20px 20px 20px;
-      text-align: center;
+    .container-login {
+      background: rgba(0, 255, 204, 0.06);
+      border: 1px solid #00ffc3;
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+      width: 90%;
+      max-width: 420px;
+      padding: 40px 30px;
+      color: #fff;
+      box-shadow: 0 0 30px rgba(0, 255, 204, 0.15);
+      animation: fadeIn 1.2s ease;
     }
-
-    .header-box h1 {
+    .form-title {
       font-size: 26px;
-      font-weight: 800;
-      background: linear-gradient(90deg, #ffffff, #ffe6ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 5px;
-    }
-
-    .header-box p {
-      font-size: 14px;
-      color: #f8eaff;
-      text-shadow: 0 0 3px rgba(255, 255, 255, 0.3);
-    }
-
-    .form-section {
-      padding: 25px 25px 20px 25px;
-      text-align: center;
-    }
-
-    .form-section h3 {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 15px;
-      color: #ffffff;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 12px 14px;
-      margin-bottom: 15px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.15);
-      color: #fff;
-      font-size: 15px;
-      outline: none;
-    }
-
-    input::placeholder {
-      color: #ddd;
-    }
-
-    button {
-      width: 100%;
-      padding: 12px;
-      background: linear-gradient(145deg, #6c63ff, #483dff);
-      color: #fff;
       font-weight: bold;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(108, 99, 255, 0.4);
-      transition: 0.3s ease;
-    }
-
-    button:hover {
-      background: linear-gradient(145deg, #584bff, #3d34d1);
-    }
-
-    .bottom-links {
-      margin-top: 15px;
-      font-size: 13px;
-    }
-
-    .bottom-links a {
-      color: #fff;
-      text-decoration: underline;
-    }
-
-    .telegram {
-      margin-top: 10px;
-      font-size: 13px;
-      opacity: 0.8;
-    }
-
-    .message {
-      margin-top: 10px;
-      font-size: 14px;
-      color: yellow;
-    }
-
-    #toggle-button {
-      position: absolute;
-      left: calc(50% - 200px - 35px);
-      top: 50%;
-      transform: translateY(-50%);
-      background: #6c63ff;
-      color: #fff;
-      font-size: 22px;
-      padding: 8px 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      z-index: 20;
-      transition: all 0.4s ease;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
-    }
-
-    .menu-container {
-      position: absolute;
-      top: 0;
-      right: -100%;
-      width: 100%;
-      height: 100%;
-      background: rgba(10, 10, 25, 0.96);
-      backdrop-filter: blur(8px);
-      padding: 30px 20px;
-      transition: right 0.5s ease;
-      z-index: 15;
-      display: flex;
-      flex-direction: column;
-      color: #fff;
-    }
-
-    .menu-container.active {
-      right: 0;
-    }
-
-    .menu-container h2 {
-      font-size: 22px;
+      text-align: center;
       margin-bottom: 25px;
-      text-align: center;
-      color: #fff;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-      padding-bottom: 10px;
+      color: #00ffc3;
     }
-
-    .menu-list {
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    .menu-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 15px;
-      background: rgba(255, 255, 255, 0.06);
+    .form-control {
+      background-color: rgba(255,255,255,0.1);
+      border: 1px solid #00ffcc;
+      color: white;
       border-radius: 10px;
-      font-size: 16px;
-      box-shadow: 0 2px 10px rgba(125, 88, 255, 0.2);
     }
-
-    .menu-item .left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 500;
-    }
-
-    .menu-item .right {
-      color: #ffd966;
-      font-weight: bold;
-    }
-
-    .menu-note {
-      margin-top: 25px;
-      font-size: 14px;
-      text-align: center;
+    .form-control::placeholder {
       color: #ccc;
     }
+    .btn-login {
+      background-color: #00ffcc;
+      color: #000;
+      font-weight: bold;
+      border-radius: 10px;
+      margin-top: 10px;
+    }
+    .glow {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: #00ffc3;
+      filter: blur(120px);
+      opacity: 0.2;
+      animation: float 6s ease-in-out infinite;
+    }
+    .glow-1 { top: 10%; left: 5%; }
+    .glow-2 { bottom: 10%; right: 5%; animation-delay: 3s; }
 
-    @media (max-width: 450px) {
-      .login-container {
-        max-width: 90%;
-      }
-
-      #toggle-button {
-        left: 10px;
-        transform: translateY(-50%);
-      }
-
-      .menu-item {
-        font-size: 15px;
-      }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
     }
   </style>
 </head>
 <body>
-
-  <div id="toggle-button">&#8249;</div>
-
-  <div class="login-container" id="loginContainer">
-    <div class="header-box">
-      <h1>MrTínhiOS</h1>
-      <p>Tool Game Tài Xỉu Uy Tín</p>
-    </div>
-
-    <div class="form-section">
-      <h3>Nhập key hệ thống</h3>
-      <form method="post" action="process_key.php">
-        <input type="text" name="access_key" placeholder="Nhập key bạn đã được cấp..." required>
-        <button type="submit">Xác thực</button>
-      </form>
-
-      <?php if ($message): ?>
-        <div class="message"><?= htmlspecialchars($message) ?></div>
-      <?php endif; ?>
-
-      <div class="bottom-links">
-        Chưa có key? <a href="https://t.me/mrtinhios">Liên hệ admin</a>
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+  <div class="container-login">
+    <div class="form-title">🚀 Đăng nhập Admin TínhiOS</div>
+    <form method="post">
+      <div class="mb-3">
+        <input type="text" name="username" class="form-control" placeholder="Tên đăng nhập" required>
       </div>
-      <div class="telegram">
-        Mọi thông tin cần hỗ trợ vui lòng liên hệ<br>
-        Telegram: <strong>@mrtinhios</strong>
+      <div class="mb-3">
+        <input type="password" name="password" class="form-control" placeholder="Mật khẩu" required>
       </div>
-    </div>
-
-    <!-- MENU GIÁ -->
-    <div class="menu-container" id="menuContainer">
-      <h2>🔐 Bảng Giá Key</h2>
-      <div class="menu-list">
-        <div class="menu-item">
-          <div class="left">📅 1 Ngày</div>
-          <div class="right">10.000đ</div>
-        </div>
-        <div class="menu-item">
-          <div class="left">📅 7 Ngày</div>
-          <div class="right">50.000đ</div>
-        </div>
-        <div class="menu-item">
-          <div class="left">📅 30 Ngày</div>
-          <div class="right">150.000đ</div>
-        </div>
-        <div class="menu-item">
-          <div class="left">📅 Vĩnh Viễn</div>
-          <div class="right">350.000đ</div>
-        </div>
-      </div>
-    </div>
+      <button type="submit" class="btn btn-login w-100">Đăng nhập</button>
+    </form>
   </div>
 
+  <?php if ($message !== ''): ?>
   <script>
-    const toggleBtn = document.getElementById('toggle-button');
-    const menu = document.getElementById('menuContainer');
-    let menuOpen = false;
-
-    toggleBtn.addEventListener('click', () => {
-      menuOpen = !menuOpen;
-
-      if (menuOpen) {
-        menu.classList.add('active');
-        toggleBtn.innerHTML = '&#8250;'; // >
-      } else {
-        menu.classList.remove('active');
-        toggleBtn.innerHTML = '&#8249;'; // <
-      }
-    });
+    const [icon, msg] = "<?= $message ?>".split('|');
+    Swal.fire({ icon, title: msg, timer: 2200, showConfirmButton: false });
   </script>
-
+  <?php endif; ?>
 </body>
 </html>
